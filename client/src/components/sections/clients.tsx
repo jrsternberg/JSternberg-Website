@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 
-export default function Expertise() {
+export default function Clients() {
   return (
-    <section id="expertise" className="py-16 md:py-24">
+    <section id="clients" className="py-16 md:py-24">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -12,9 +12,9 @@ export default function Expertise() {
           transition={{ duration: 0.5 }}
           className="max-w-2xl mx-auto text-center mb-12"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Areas of Expertise</h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Clients</h2>
           <p className="text-gray-600">
-            Deep industry knowledge and proven methodologies to drive your success.
+            Trusted by innovative companies across various industries.
           </p>
         </motion.div>
 
@@ -32,12 +32,12 @@ export default function Expertise() {
                   alt="Team collaboration"
                   className="w-full h-48 object-cover rounded-lg mb-6"
                 />
-                <h3 className="text-xl font-semibold mb-4">Revenue Intelligence</h3>
+                <h3 className="text-xl font-semibold mb-4">Technology Companies</h3>
                 <ul className="space-y-3 text-gray-600">
-                  <li>• Advanced analytics and reporting</li>
-                  <li>• Customer journey optimization</li>
-                  <li>• Revenue forecasting</li>
-                  <li>• Performance metrics tracking</li>
+                  <li>• SaaS Platforms</li>
+                  <li>• Software Development Firms</li>
+                  <li>• Tech Startups</li>
+                  <li>• Enterprise Solutions</li>
                 </ul>
               </CardContent>
             </Card>
@@ -56,12 +56,12 @@ export default function Expertise() {
                   alt="Business meeting"
                   className="w-full h-48 object-cover rounded-lg mb-6"
                 />
-                <h3 className="text-xl font-semibold mb-4">Operational Excellence</h3>
+                <h3 className="text-xl font-semibold mb-4">Business Services</h3>
                 <ul className="space-y-3 text-gray-600">
-                  <li>• Process optimization</li>
-                  <li>• Sales team enablement</li>
-                  <li>• Technology stack integration</li>
-                  <li>• Scalable operations design</li>
+                  <li>• Marketing Agencies</li>
+                  <li>• Business Consultancies</li>
+                  <li>• Professional Services</li>
+                  <li>• Growth-Stage Companies</li>
                 </ul>
               </CardContent>
             </Card>
