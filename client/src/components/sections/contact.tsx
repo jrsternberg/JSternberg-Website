@@ -35,14 +35,14 @@ export default function Contact() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-
+  
       if (!response.ok) throw new Error("Failed to send message");
-
+  
       toast({
         title: "Message sent!",
         description: "We'll get back to you soon.",
       });
-
+  
       form.reset();
     } catch (error) {
       toast({
