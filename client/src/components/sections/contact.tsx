@@ -4,10 +4,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
+
+// Simple validation functions
+const validateEmail = (email) => {
+  return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+};
+
+const validateRequired = (value) => {
+  return value.trim().length > 0;
+};
 
 export default function Contact() {
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -15,7 +25,6 @@ export default function Contact() {
   });
   const [errors, setErrors] = useState({});
 
-  // Update form fields
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -23,7 +32,7 @@ export default function Contact() {
       [name]: value
     }));
     
-    // Clear errors when typing
+    // Clear error when user types
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -32,15 +41,14 @@ export default function Contact() {
     }
   };
 
-  // Validate the form
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.name.trim()) {
+    if (!validateRequired(formData.name)) {
       newErrors.name = "Name is required";
     }
     
-    if (!formData.email.trim() || !formData.email.includes('@')) {
+    if (!validateEmail(formData.email)) {
       newErrors.email = "Valid email is required";
     }
     
@@ -52,34 +60,55 @@ export default function Contact() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Success callback function for when iframe loads after submission
-  const handleIframeLoad = (e) => {
-    if (isSubmitting) {
-      setIsSubmitting(false);
-      setIsSuccess(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Send to your own API endpoint
+      const response = await fetch("/api/contact", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      // Parse the JSON response
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Form submission failed');
+      }
+      
+      // Success
+      toast({
+        title: "Message sent!",
+        description: "We'll get back to you soon.",
+      });
+      
+      // Reset form
       setFormData({
         name: "",
         email: "",
         message: ""
       });
       
-      // Hide success message after 5 seconds
-      setTimeout(() => {
-        setIsSuccess(false);
-      }, 5000);
+    } catch (error) {
+      console.error("Form submission error:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-  };
-
-  // Handle form submission
-  const handleSubmit = (e) => {
-    if (!validateForm()) {
-      e.preventDefault();
-      return false;
-    }
-    
-    setIsSubmitting(true);
-    // Let the form submit naturally to the target
-    return true;
   };
 
   return (
@@ -106,92 +135,71 @@ export default function Contact() {
         >
           <Card className="max-w-xl mx-auto">
             <CardContent className="p-6">
-              {isSuccess ? (
-                <div className="text-center py-8">
-                  <h3 className="text-xl font-semibold text-green-600 mb-2">Message Sent!</h3>
-                  <p className="text-gray-600">We'll get back to you soon.</p>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium mb-2" htmlFor="name">
+                    Name
+                  </label>
+                  <Input
+                    id="name"
+                    name="name"
+                    placeholder="Your name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className={errors.name ? "border-red-500" : ""}
+                  />
+                  {errors.name && (
+                    <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+                  )}
                 </div>
-              ) : (
-                <form 
-                  action="https://hooks.zapier.com/hooks/catch/21760921/2wgevbm/"
-                  method="POST"
-                  target="hidden-form-target"
-                  onSubmit={handleSubmit}
-                  className="space-y-6"
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" htmlFor="email">
+                    Email
+                  </label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="Your email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className={errors.email ? "border-red-500" : ""}
+                  />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2" htmlFor="message">
+                    Message
+                  </label>
+                  <Textarea
+                    id="message"
+                    name="message"
+                    placeholder="How can we help?"
+                    className={`min-h-[120px] ${errors.message ? "border-red-500" : ""}`}
+                    value={formData.message}
+                    onChange={handleChange}
+                  />
+                  {errors.message && (
+                    <p className="mt-1 text-sm text-red-500">{errors.message}</p>
+                  )}
+                </div>
+
+                <Button 
+                  type="submit"
+                  className="w-full"
+                  disabled={isSubmitting}
                 >
-                  <div>
-                    <label className="block text-sm font-medium mb-2" htmlFor="name">
-                      Name
-                    </label>
-                    <Input
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder="Your name"
-                      className={errors.name ? "border-red-500" : ""}
-                    />
-                    {errors.name && (
-                      <p className="mt-1 text-sm text-red-500">{errors.name}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2" htmlFor="email">
-                      Email
-                    </label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="Your email"
-                      className={errors.email ? "border-red-500" : ""}
-                    />
-                    {errors.email && (
-                      <p className="mt-1 text-sm text-red-500">{errors.email}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2" htmlFor="message">
-                      Message
-                    </label>
-                    <Textarea
-                      id="message"
-                      name="message"
-                      value={formData.message}
-                      onChange={handleChange}
-                      placeholder="How can we help?"
-                      className={`min-h-[120px] ${errors.message ? "border-red-500" : ""}`}
-                    />
-                    {errors.message && (
-                      <p className="mt-1 text-sm text-red-500">{errors.message}</p>
-                    )}
-                  </div>
-
-                  <Button 
-                    type="submit"
-                    className="w-full"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Sending..." : "Send Message"}
-                  </Button>
-                </form>
-              )}
+                  {isSubmitting ? "Sending..." : "Send Message"}
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </motion.div>
       </div>
-      
-      {/* Hidden iframe to handle form submission without page reload */}
-      <iframe 
-        name="hidden-form-target"
-        id="hidden-form-target"
-        className="hidden"
-        onLoad={handleIframeLoad} 
-      />
     </section>
   );
 }
