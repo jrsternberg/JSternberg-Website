@@ -15,6 +15,9 @@ const validateRequired = (value) => {
   return value.trim().length > 0;
 };
 
+// Make sure to replace this with your actual formspree ID
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/YOUR_FORMSPREE_ID";
+
 export default function Contact() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,27 +73,37 @@ export default function Contact() {
     setIsSubmitting(true);
     
     try {
-      // Using form data to create a no-CORS request
+      // Submit via a real form to avoid CORS issues
       const formElement = document.createElement('form');
       formElement.method = 'POST';
-      formElement.action = 'https://hooks.zapier.com/hooks/catch/21760921/2wgevbm/';
-      formElement.target = '_blank';
+      formElement.action = FORMSPREE_ENDPOINT;
       
-      // Create hidden inputs for each field
+      // Add all data as hidden fields
       Object.entries(formData).forEach(([key, value]) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = value;
-        formElement.appendChild(input);
+        const hiddenField = document.createElement('input');
+        hiddenField.type = 'hidden';
+        hiddenField.name = key;
+        hiddenField.value = value;
+        formElement.appendChild(hiddenField);
       });
       
-      // Add form to body, submit it, then remove it
+      // Add a hidden field for the zapier webhook
+      const zapierField = document.createElement('input');
+      zapierField.type = 'hidden';
+      zapierField.name = '_next';
+      zapierField.value = 'https://hooks.zapier.com/hooks/catch/21760921/2wgevbm/';
+      formElement.appendChild(zapierField);
+      
+      // Add form to the document body
       document.body.appendChild(formElement);
+      
+      // Submit the form
       formElement.submit();
+      
+      // Remove the form
       document.body.removeChild(formElement);
       
-      // Success - we'll assume it worked since we can't check the response with this method
+      // Show success message
       toast({
         title: "Message sent!",
         description: "We'll get back to you soon.",
