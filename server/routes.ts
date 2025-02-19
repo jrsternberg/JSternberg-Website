@@ -12,14 +12,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contact", async (req, res) => {
     try {
       const data = contactSchema.parse(req.body);
-      
-      // In a real application, you would send an email here
-      // For now, we'll just log the message
-      console.log("Contact form submission:", data);
+
+      // Send to Zapier webhook
+      const webhookResponse = await fetch('https://hooks.zapier.com/hooks/catch/21760921/2wgevbm/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!webhookResponse.ok) {
+        throw new Error('Failed to send to webhook');
+      }
 
       res.json({ success: true });
     } catch (error) {
-      res.status(400).json({ message: "Invalid request" });
+      console.error('Contact form error:', error);
+      res.status(400).json({ message: "Failed to process contact form" });
     }
   });
 
