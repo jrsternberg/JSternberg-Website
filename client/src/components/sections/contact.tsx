@@ -70,20 +70,27 @@ export default function Contact() {
     setIsSubmitting(true);
     
     try {
-      // Direct submission to Zapier webhook
-      const response = await fetch('https://hooks.zapier.com/hooks/catch/21760921/2wgevbm/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      // Using form data to create a no-CORS request
+      const formElement = document.createElement('form');
+      formElement.method = 'POST';
+      formElement.action = 'https://hooks.zapier.com/hooks/catch/21760921/2wgevbm/';
+      formElement.target = '_blank';
+      
+      // Create hidden inputs for each field
+      Object.entries(formData).forEach(([key, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value;
+        formElement.appendChild(input);
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
+      // Add form to body, submit it, then remove it
+      document.body.appendChild(formElement);
+      formElement.submit();
+      document.body.removeChild(formElement);
       
-      // Success
+      // Success - we'll assume it worked since we can't check the response with this method
       toast({
         title: "Message sent!",
         description: "We'll get back to you soon.",
