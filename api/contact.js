@@ -1,22 +1,23 @@
 import { z } from 'zod';
 
+// Schema validation
 const contactSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  message: z.string().min(10),
+  name: z.string().min(2, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  message: z.string().min(10, "Message must be at least 10 characters"),
 });
 
-export default async function handler(request, response) {
+export default async function handler(req, res) {
   // Only allow POST requests
-  if (request.method !== 'POST') {
-    return response.status(405).json({ message: 'Method not allowed' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
   }
 
   try {
-    // Validate the incoming data
-    const data = contactSchema.parse(request.body);
+    // Validate the request body
+    const data = contactSchema.parse(req.body);
 
-    // Send to Zapier webhook
+    // Forward to Zapier webhook
     const webhookResponse = await fetch('https://hooks.zapier.com/hooks/catch/21760921/2wgevbm/', {
       method: 'POST',
       headers: {
@@ -29,9 +30,21 @@ export default async function handler(request, response) {
       throw new Error('Failed to send to webhook');
     }
 
-    return response.status(200).json({ success: true });
+    // Return success response
+    return res.status(200).json({ success: true });
   } catch (error) {
     console.error('Contact form error:', error);
-    return response.status(400).json({ message: "Failed to process contact form" });
+    
+    // Return appropriate error based on type
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        message: "Validation error", 
+        errors: error.errors 
+      });
+    }
+    
+    return res.status(500).json({ 
+      message: "Failed to process contact form"
+    });
   }
 }
