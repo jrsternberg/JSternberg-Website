@@ -1,3 +1,6 @@
+// Option 1: Modify contact.tsx to handle both direct API and fallback approaches
+// This approach adds a fallback to direct Zapier submission if the API fails
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +11,7 @@ import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { useState } from "react";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -17,8 +21,13 @@ const contactSchema = z.object({
 
 type ContactForm = z.infer<typeof contactSchema>;
 
+// Zapier webhook URL as fallback
+const ZAPIER_WEBHOOK = 'https://hooks.zapier.com/hooks/catch/21760921/2wgevbm/';
+
 export default function Contact() {
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const form = useForm<ContactForm>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
@@ -29,27 +38,52 @@ export default function Contact() {
   });
 
   async function onSubmit(data: ContactForm) {
+    setIsSubmitting(true);
+    
     try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-  
-      if (!response.ok) throw new Error("Failed to send message");
-  
+      // First try the API endpoint
+      let success = false;
+      
+      try {
+        const response = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        
+        success = response.ok;
+      } catch (apiError) {
+        console.log("API endpoint failed, trying direct webhook:", apiError);
+      }
+      
+      // If API fails, try direct Zapier webhook as fallback
+      if (!success) {
+        const directResponse = await fetch(ZAPIER_WEBHOOK, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        
+        if (!directResponse.ok) {
+          throw new Error("All submission methods failed");
+        }
+      }
+
       toast({
         title: "Message sent!",
         description: "We'll get back to you soon.",
       });
-  
+
       form.reset();
     } catch (error) {
+      console.error("Contact submission error:", error);
       toast({
         title: "Error",
         description: "Failed to send message. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -125,8 +159,8 @@ export default function Contact() {
                     )}
                   />
 
-                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? "Sending..." : "Send Message"}
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? "Sending..." : "Send Message"}
                   </Button>
                 </form>
               </Form>
