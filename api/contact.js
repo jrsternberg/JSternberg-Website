@@ -1,50 +1,61 @@
-import { z } from 'zod';
-
-// Schema validation
-const contactSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
-});
+import fetch from 'node-fetch';
 
 export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
   try {
-    // Validate the request body
-    const data = contactSchema.parse(req.body);
-
-    // Forward to Zapier webhook
-    const webhookResponse = await fetch('https://hooks.zapier.com/hooks/catch/21760921/2wgevbm/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!webhookResponse.ok) {
-      throw new Error('Failed to send to webhook');
-    }
-
-    // Return success response
-    return res.status(200).json({ success: true });
-  } catch (error) {
-    console.error('Contact form error:', error);
+    // Get form data from request
+    const { name, email, message } = req.body;
     
-    // Return appropriate error based on type
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        message: "Validation error", 
-        errors: error.errors 
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
       });
     }
     
-    return res.status(500).json({ 
-      message: "Failed to process contact form"
+    // Forward the request to Zapier
+    const response = await fetch('https://hooks.zapier.com/hooks/catch/21760921/2wgevbm/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name,
+        email,
+        message
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Zapier responded with ${response.status}`);
+    }
+    
+    // Return success response
+    return res.status(200).json({
+      success: true,
+      message: 'Form submitted successfully'
+    });
+    
+  } catch (error) {
+    console.error('Proxy error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to submit form'
     });
   }
 }
